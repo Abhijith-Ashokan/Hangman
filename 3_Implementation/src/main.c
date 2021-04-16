@@ -1,3 +1,13 @@
+/**
+ * @file main.c
+ * @author Abhijith Ashokan
+ * @brief 
+ * @version 0.1
+ * @date 2021-04-16
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include <stdlib.h>
 #include <time.h>
 #include "msg.h"
