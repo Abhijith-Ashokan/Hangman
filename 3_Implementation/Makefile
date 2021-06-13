@@ -1,63 +1,53 @@
 PROJ_NAME = hangman
-TEST_PROJ_NAME = Test_$(PROJ_NAME)
 
-SRC =src/hangman.c
+BUILD_DIR = Build
 
-COV_SRC = test.c
+# All Source code files
+SRC = main.c\
+src/hangman.c
 
-TEST_SRC = test/test.c \
-unity/unity.c 
-INC_H = inc
-INC_T = unity
+# All header file paths
+INC = -I inc
 
-ifdef OS
-   RM = del 
+# Find out the OS and configure the variables accordingly
+ifdef OS	# All configurations for Windwos OS
+# Correct the path based on OS
    FixPath = $(subst /,\,$1)
-   EXEC = exe
-else
+# Name of the compiler used
+   CC = avr-gcc.exe
+# Name of the elf to hex file converter used
+   AVR_OBJ_CPY = avr-objcopy.exe
+else #All configurations for Linux OS
    ifeq ($(shell uname), Linux)
-      RM = rm -rf
-      FixPath = $1
-	  EXEC = out
+# Correct the path based on OS
+      FixPath = $1				
+# Name of the compiler used
+	  CC = avr-gcc
+# Name of the elf to hex file converter used
+	  AVR_OBJ_CPY = avr-objcopy 
    endif
 endif
-.PHONY: run clean test doc all
 
-all:
-	gcc -I $(INC_H) $(SRC) main.c -o $(call FixPath,$(PROJ_NAME).$(EXEC))
-	
-run:
-	./$(call FixPath,$(PROJ_NAME).$(EXEC))
-test:
-	gcc -I $(INC_H) -I $(INC_T) $(TEST_SRC) $(SRC) -o $(call FixPath,$(TEST_PROJ_NAME).$(EXEC))
-	./$(call FixPath,$(TEST_PROJ_NAME).$(EXEC))
+# Command to make to consider these names as targets and not as file names in folder
+.PHONY:all analysis clean doc
 
-coverage:
-	cp test/test.c .
-	gcc -fprofile-arcs -ftest-coverage -I $(INC_H) -I $(INC_T) unity/unity.c test.c $(SRC) -o $(call FixPath, $(TEST_PROJ_NAME).$(EXEC))
-	$(call FixPath, ./$(TEST_PROJ_NAME).$(EXEC))
-	gcov -a $(COV_SRC)
-	$(RM) *.$(EXEC)
-	$(RM) *.gcda
-	$(RM) *.gcno
-	$(RM) *.c.gcov
-	$(RM) *.DAT
-	$(RM) test.c
+all:$(BUILD_DIR)
+# Compile the code and generate the ELF file
+	$(CC) -g -Wall -Os -mmcu=atmega328 -DF_CPU=16000000UL $(INC) $(SRC) -o $(call FixPath,$(BUILD_DIR)/$(PROJ_NAME).elf)
 
+$(BUILD_DIR):
+# Create directory to store the built files
+	mkdir $(BUILD_DIR)
 
-cppcheck:
-	cppcheck --enable=all $(SRC) main.c
-debug:
-	gcc -I $(INC_H) $(SRC) main.c -g -o $(PROJ_NAME).$(EXEC)
-	gdb $(PROJ_NAME).$(EXEC)
+analysis: $(SRC)
+# Analyse the code using Cppcheck command line utility
+	cppcheck --enable=all $^
 
-valgrind:
-	valgrind ./$(TEST_PROJ_NAME).$(EXEC)
-
+doc:
+# Build the code code documentation using Doxygen command line utility
+	make -C documentation
 
 clean:
-	$(RM) *.DAT
-	$(RM) *.$(EXEC)
-	$(RM) *.gcda
-	$(RM) *.gcno
-	$(RM) *.c.gcov
+# Remove all the build files and generated document files
+	rm -rf $(call FixPath,$(BUILD_DIR)/*)
+	make -C documentation clean
