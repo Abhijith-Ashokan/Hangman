@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
+#include"hangman.h"
 
 int main() {
 
