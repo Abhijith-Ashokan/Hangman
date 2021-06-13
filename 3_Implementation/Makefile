@@ -1,40 +1,63 @@
-NAME	= hangman
+PROJ_NAME = hangman
+TEST_PROJ_NAME = Test_$(PROJ_NAME)
 
-RM	= rm -f
+SRC =src/hangman.c
 
-CC	= gcc
-CFLAGS	+= -I include/
-CFLAGS	+= -W -Wall -Wextra -Werror
+COV_SRC = test.c
 
-TOOLS_DIR	= tools/
-TOOLS_FILES	= get_next_line.c		\
-		  my_realloc.c			\
-		  my_putnbr.c			\
-		  puts.c
-TOOLS		= $(addprefix $(TOOLS_DIR), $(TOOLS_FILES))
+TEST_SRC = test/test.c \
+unity/unity.c 
+INC_H = inc
+INC_T = unity
 
-SRCS_DIR	= src/
-SRCS_FILES	= get_file.c		\
-		  main.c		\
-		  run_game.c		\
-		  word.c		\
-		  $(TOOLS)
-SRCS		= $(addprefix $(SRCS_DIR), $(SRCS_FILES))
+ifdef OS
+   RM = del 
+   FixPath = $(subst /,\,$1)
+   EXEC = exe
+else
+   ifeq ($(shell uname), Linux)
+      RM = rm -rf
+      FixPath = $1
+	  EXEC = out
+   endif
+endif
+.PHONY: run clean test doc all
 
-OBJS	= $(SRCS:.c=.o)
+all:
+	gcc -I $(INC_H) $(SRC) main.c -o $(call FixPath,$(PROJ_NAME).$(EXEC))
+	
+run:
+	./$(call FixPath,$(PROJ_NAME).$(EXEC))
+test:
+	gcc -I $(INC_H) -I $(INC_T) $(TEST_SRC) $(SRC) -o $(call FixPath,$(TEST_PROJ_NAME).$(EXEC))
+	./$(call FixPath,$(TEST_PROJ_NAME).$(EXEC))
+
+coverage:
+	cp test/test.c .
+	gcc -fprofile-arcs -ftest-coverage -I $(INC_H) -I $(INC_T) unity/unity.c test.c $(SRC) -o $(call FixPath, $(TEST_PROJ_NAME).$(EXEC))
+	$(call FixPath, ./$(TEST_PROJ_NAME).$(EXEC))
+	gcov -a $(COV_SRC)
+	$(RM) *.$(EXEC)
+	$(RM) *.gcda
+	$(RM) *.gcno
+	$(RM) *.c.gcov
+	$(RM) *.DAT
+	$(RM) test.c
 
 
-all: $(NAME)
+cppcheck:
+	cppcheck --enable=all $(SRC) main.c
+debug:
+	gcc -I $(INC_H) $(SRC) main.c -g -o $(PROJ_NAME).$(EXEC)
+	gdb $(PROJ_NAME).$(EXEC)
 
-$(NAME): $(OBJS)
-	$(CC) -o $(NAME) $(OBJS)
+valgrind:
+	valgrind ./$(TEST_PROJ_NAME).$(EXEC)
+
 
 clean:
-	$(RM) $(OBJS)
-
-fclean: clean
-	$(RM) $(NAME)
-
-re: fclean all
-
-.PHONY: all clean fclean re
+	$(RM) *.DAT
+	$(RM) *.$(EXEC)
+	$(RM) *.gcda
+	$(RM) *.gcno
+	$(RM) *.c.gcov
